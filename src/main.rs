@@ -1,6 +1,8 @@
 use clap::{Arg, Command};
 use std::process::Command as SystemCommand;
 use chrono::Utc;
+use std::process;
+use std::fs;
 
 fn main() {
     let install_id = "install";
@@ -41,30 +43,51 @@ fn main() {
         )
         .get_matches();
 
+    let fs_type = &get_root_filesystem_type();
+    if fs_type != "btrfs" && fs_type != "zfs" {
+        eprintln!("Error: Unsupported filesystem type '{}'. Only 'btrfs' and 'zfs' are supported.", fs_type);
+        process::exit(1);
+    }
+    println!("{fs_type}");
+    
     if let Some(matches) = matches.subcommand_matches(install_id) {
       let temp = String::new();
       let package = matches.get_one::<String>(install_package_id).unwrap_or(&temp);
-      apt_install_package(package);
+      apt_install_package(package, fs_type);
     }
 
     if let Some(matches) = matches.subcommand_matches(uninstall_id) {
       let temp = String::new();
       let package = matches.get_one::<String>(uninstall_package_id).unwrap_or(&temp);
-      apt_uninstall_package(package);
+      apt_uninstall_package(package, fs_type);
     }
 
     if let Some(matches) = matches.subcommand_matches(rollback_id) {
-        rollback_last_transaction();
+        rollback_last_transaction(fs_type);
     }
 }
 
-fn apt_install_package(package: &str) {
+fn get_root_filesystem_type() -> String {
+
+  let mounts = fs::read_to_string("/proc/mounts").expect("Failed to read /proc/mounts");
+  for line in mounts.lines() {
+    let fields: Vec<&str> = line.split_whitespace().collect();
+    if fields.len() > 2 && fields[1] == "/" {
+      return fields[2].to_string();
+    }
+  }
+
+  eprintln!("Error: Failed to determine filesystem type");
+  process::exit(1);
+}
+
+fn apt_install_package(package: &str, fs_type: &str) {
     println!("apt_install_package({package})");
 
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
     let pre_install_snapshot_name = &format!("{timestamp}-pre-install");
 
-    create_snapshot("btrfs", "root", pre_install_snapshot_name);
+    create_snapshot(fs_type, "root", pre_install_snapshot_name);
 
     let update_output = SystemCommand::new("apt-get")
       .arg("update")
@@ -97,20 +120,20 @@ fn apt_install_package(package: &str) {
 
     if output.status.success() {
       println!("Package installed successfully");
-      create_snapshot("btrfs", "root", &format!("{timestamp}-post-install"));
+      create_snapshot(fs_type, "root", &format!("{timestamp}-post-install"));
     } else {
         eprintln!("Failed to install package");
-        rollback_to_snapshot("btrfs", "root", pre_install_snapshot_name);
+        rollback_to_snapshot(fs_type, "root", pre_install_snapshot_name);
     }
 }
 
-fn apt_uninstall_package(package: &str) {
+fn apt_uninstall_package(package: &str, fs_type: &str) {
     println!("apt_uninstall_package({package})");
 
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
     let pre_uninstall_snapshot_name = &format!("{timestamp}-pre-uninstall");
 
-    create_snapshot("btrfs", "root", pre_uninstall_snapshot_name);
+    create_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
 
     let output = SystemCommand::new("apt-get")
       .arg("remove")
@@ -129,10 +152,10 @@ fn apt_uninstall_package(package: &str) {
 
     if output.status.success() {
       println!("Package uninstalled successfully");
-      create_snapshot("btrfs", "root", &format!("{timestamp}-post-uninstall"));
+      create_snapshot(fs_type, "root", &format!("{timestamp}-post-uninstall"));
     } else {
         eprintln!("Failed to uninstall package");
-        rollback_to_snapshot("btrfs", "root", pre_uninstall_snapshot_name);
+        rollback_to_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
     }
 }
 
@@ -243,7 +266,7 @@ fn rollback_to_snapshot(fs_type: &str, current: &str, snapshot: &str) {
     }
 }
 
-fn rollback_last_transaction() {
+fn rollback_last_transaction(fs_type: &str) {
     println!("rollback_last_transaction()");
     return;
 
