@@ -2,6 +2,7 @@
 name = "cli-packmgr"
 version = "0.1.0"
 edition = "2021"
+description = "Transactional Immutable Package Manager Wrapper for linux package managers"
 
 [dependencies]
 clap = "4"
