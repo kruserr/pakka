@@ -44,10 +44,14 @@ fn main() {
         .get_matches();
 
     let fs_type = &get_root_filesystem_type();
-    if fs_type != "btrfs" && fs_type != "zfs" {
-        eprintln!("Error: Unsupported filesystem type '{}'. Only 'btrfs' and 'zfs' are supported.", fs_type);
-        process::exit(1);
+    match fs_type {
+        Filesystem::Unsupported(_) => {
+          eprintln!("Error: Unsupported filesystem type '{fs_type}'. Only 'btrfs' and 'zfs' are supported.");
+          process::exit(1);
+        },
+        _ => {}
     }
+
     println!("{fs_type}");
     
     if let Some(matches) = matches.subcommand_matches(install_id) {
@@ -67,13 +71,29 @@ fn main() {
     }
 }
 
-fn get_root_filesystem_type() -> String {
+#[derive(Debug)]
+enum Filesystem {
+  Btrfs,
+  Zfs,
+  Unsupported(String),
+}
 
+impl std::fmt::Display for Filesystem {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
+
+fn get_root_filesystem_type() -> Filesystem {
   let mounts = fs::read_to_string("/proc/mounts").expect("Failed to read /proc/mounts");
   for line in mounts.lines() {
     let fields: Vec<&str> = line.split_whitespace().collect();
     if fields.len() > 2 && fields[1] == "/" {
-      return fields[2].to_string();
+      return match fields[2] {
+        "btrfs" => Filesystem::Btrfs,
+        "zfs" => Filesystem::Zfs,
+        other => Filesystem::Unsupported(other.to_string()),
+      };
     }
   }
 
@@ -81,7 +101,7 @@ fn get_root_filesystem_type() -> String {
   process::exit(1);
 }
 
-fn apt_install_package(package: &str, fs_type: &str) {
+fn apt_install_package(package: &str, fs_type: &Filesystem) {
     println!("apt_install_package({package})");
 
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
@@ -127,7 +147,7 @@ fn apt_install_package(package: &str, fs_type: &str) {
     }
 }
 
-fn apt_uninstall_package(package: &str, fs_type: &str) {
+fn apt_uninstall_package(package: &str, fs_type: &Filesystem) {
     println!("apt_uninstall_package({package})");
 
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
@@ -244,29 +264,29 @@ fn zfs_rollback_snapshot(pool: &str, dataset: &str, snapshot: &str) {
     }
 }
 
-fn create_snapshot(fs_type: &str, source: &str, dest: &str) {
+fn create_snapshot(fs_type: &Filesystem, source: &str, dest: &str) {
     println!("create_snapshot({fs_type}, {source}, {dest})");
     return;
 
     match fs_type {
-        "btrfs" => btrfs_create_snapshot(source, dest),
-        "zfs" => zfs_create_snapshot(source, dest, "snapshot"),
+        Filesystem::Btrfs => btrfs_create_snapshot(source, dest),
+        Filesystem::Zfs => zfs_create_snapshot(source, dest, "snapshot"),
         _ => eprintln!("Unsupported filesystem type"),
     }
 }
 
-fn rollback_to_snapshot(fs_type: &str, current: &str, snapshot: &str) {
+fn rollback_to_snapshot(fs_type: &Filesystem, current: &str, snapshot: &str) {
     println!("rollback_to_snapshot({fs_type}, {current}, {snapshot})");
     return;
 
     match fs_type {
-        "btrfs" => btrfs_rollback_snapshot(current, snapshot),
-        "zfs" => zfs_rollback_snapshot(current, snapshot, "snapshot"),
+        Filesystem::Btrfs => btrfs_rollback_snapshot(current, snapshot),
+        Filesystem::Zfs => zfs_rollback_snapshot(current, snapshot, "snapshot"),
         _ => eprintln!("Unsupported filesystem type"),
     }
 }
 
-fn rollback_last_transaction(fs_type: &str) {
+fn rollback_last_transaction(fs_type: &Filesystem) {
     println!("rollback_last_transaction()");
     return;
 
