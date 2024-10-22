@@ -1,5 +1,6 @@
 use clap::{Arg, Command};
 use std::process::Command as SystemCommand;
+use chrono::Utc;
 
 fn main() {
     let install_id = "install";
@@ -31,37 +32,63 @@ fn main() {
       let temp = String::new();
       let package = matches.get_one::<String>(install_package_id).unwrap_or(&temp);
       println!("Installing package: {}", package);
-      // install_package(package);
+      install_package(package);
     }
 
     if let Some(matches) = matches.subcommand_matches(rollback_id) {
         println!("Rolling back last transaction");
-        // rollback_last_transaction();
+        rollback_last_transaction();
     }
 }
 
 fn install_package(package: &str) {
-    // Create pre-installation snapshot
-    create_snapshot("btrfs", "root", "pre-install");
+    let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
+    let pre_install_snapshot_name = &format!("{timestamp}-pre-install");
+
+    create_snapshot("btrfs", "root", pre_install_snapshot_name);
+
+    let update_output = SystemCommand::new("apt-get")
+      .arg("update")
+      .output()
+      .expect("Failed to update package list");
+
+    if !update_output.stdout.is_empty() {
+      print!("{}", String::from_utf8_lossy(&update_output.stdout));
+    }
+
+    if !update_output.status.success() {
+      eprint!("{}", String::from_utf8_lossy(&update_output.stderr));
+      return;
+    }
 
     let output = SystemCommand::new("apt-get")
-        .arg("install")
-        .arg(package)
-        .output()
-        .expect("Failed to execute apt-get");
+      .arg("install")
+      .arg("-y")
+      .arg(package)
+      .output()
+      .expect("Failed to install package");
+
+    if !output.stdout.is_empty() {
+      print!("{}", String::from_utf8_lossy(&output.stdout));
+    }
+
+    if !output.stderr.is_empty() {
+      eprint!("{}", String::from_utf8_lossy(&output.stderr));
+    }
 
     if output.status.success() {
-        println!("Package installed successfully");
-        // Create post-installation snapshot
-        create_snapshot("btrfs", "root", "post-install");
+      println!("Package installed successfully");
+      create_snapshot("btrfs", "root", &format!("{timestamp}-post-install"));
     } else {
         eprintln!("Failed to install package");
-        // Rollback to pre-installation snapshot
-        rollback_to_snapshot("btrfs", "root", "pre-install");
+        rollback_to_snapshot("btrfs", "root", pre_install_snapshot_name);
     }
 }
 
 fn create_btrfs_snapshot(source: &str, dest: &str) {
+    println!("create_btrfs_snapshot({source}, {dest})");
+    return;
+
     let output = SystemCommand::new("btrfs")
         .arg("subvolume")
         .arg("snapshot")
@@ -78,6 +105,9 @@ fn create_btrfs_snapshot(source: &str, dest: &str) {
 }
 
 fn create_zfs_snapshot(pool: &str, dataset: &str, snapshot: &str) {
+    println!("create_zfs_snapshot({pool}, {dataset}, {snapshot})");
+    return;
+
     let snapshot_name = format!("{}@{}", dataset, snapshot);
     let output = SystemCommand::new("zfs")
         .arg("snapshot")
@@ -93,6 +123,9 @@ fn create_zfs_snapshot(pool: &str, dataset: &str, snapshot: &str) {
 }
 
 fn rollback_btrfs_snapshot(current: &str, snapshot: &str) {
+    println!("rollback_btrfs_snapshot({current}, {snapshot})");
+    return;
+
     let delete_output = SystemCommand::new("btrfs")
         .arg("subvolume")
         .arg("delete")
@@ -120,6 +153,9 @@ fn rollback_btrfs_snapshot(current: &str, snapshot: &str) {
 }
 
 fn rollback_zfs_snapshot(pool: &str, dataset: &str, snapshot: &str) {
+    println!("rollback_zfs_snapshot({pool}, {dataset}, {snapshot})");
+    return;
+
     let snapshot_name = format!("{}@{}", dataset, snapshot);
     let output = SystemCommand::new("zfs")
         .arg("rollback")
@@ -135,6 +171,9 @@ fn rollback_zfs_snapshot(pool: &str, dataset: &str, snapshot: &str) {
 }
 
 fn create_snapshot(fs_type: &str, source: &str, dest: &str) {
+    println!("create_snapshot({fs_type}, {source}, {dest})");
+    return;
+
     match fs_type {
         "btrfs" => create_btrfs_snapshot(source, dest),
         "zfs" => create_zfs_snapshot(source, dest, "snapshot"),
@@ -143,6 +182,9 @@ fn create_snapshot(fs_type: &str, source: &str, dest: &str) {
 }
 
 fn rollback_to_snapshot(fs_type: &str, current: &str, snapshot: &str) {
+    println!("rollback_to_snapshot({fs_type}, {current}, {snapshot})");
+    return;
+
     match fs_type {
         "btrfs" => rollback_btrfs_snapshot(current, snapshot),
         "zfs" => rollback_zfs_snapshot(current, snapshot, "snapshot"),
@@ -151,6 +193,9 @@ fn rollback_to_snapshot(fs_type: &str, current: &str, snapshot: &str) {
 }
 
 fn rollback_last_transaction() {
+    println!("rollback_last_transaction()");
+    return;
+
     // Implement rollback logic here
     println!("Rolling back last transaction");
 }
