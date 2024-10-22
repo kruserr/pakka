@@ -52,18 +52,21 @@ fn main() {
         _ => {}
     }
 
+    let package_manager = &get_package_manager();
+
     println!("{fs_type}");
+    println!("{package_manager}");
     
     if let Some(matches) = matches.subcommand_matches(install_id) {
       let temp = String::new();
       let package = matches.get_one::<String>(install_package_id).unwrap_or(&temp);
-      apt_install_package(package, fs_type);
+      package_manager.install_package(package, fs_type);
     }
 
     if let Some(matches) = matches.subcommand_matches(uninstall_id) {
       let temp = String::new();
       let package = matches.get_one::<String>(uninstall_package_id).unwrap_or(&temp);
-      apt_uninstall_package(package, fs_type);
+      package_manager.uninstall_package(package, fs_type);
     }
 
     if let Some(matches) = matches.subcommand_matches(rollback_id) {
@@ -101,7 +104,192 @@ fn get_root_filesystem_type() -> Filesystem {
   process::exit(1);
 }
 
-fn apt_install_package(package: &str, fs_type: &Filesystem) {
+trait PackageManager {
+  fn get_name(&self) -> &str;
+  fn install_package(&self, package: &str, fs_type: &Filesystem);
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem);
+}
+
+impl std::fmt::Debug for dyn PackageManager {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{}", self.get_name())
+  }
+}
+
+impl std::fmt::Display for dyn PackageManager {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
+
+fn detect_package_manager() -> Option<&'static dyn PackageManager> {
+  let managers: Vec<(&str, &'static dyn PackageManager)> = vec![
+    (AptPackageManager::NAME, &AptPackageManager),
+    (DnfPackageManager::NAME, &DnfPackageManager),
+    (PacmanPackageManager::NAME, &PacmanPackageManager),
+    (ZypperPackageManager::NAME, &ZypperPackageManager),
+    (NixPackageManager::NAME, &NixPackageManager),
+  ];
+
+  let distro_family = get_distro_family();
+
+  for (cmd, manager) in &managers {
+    if SystemCommand::new("which").arg(cmd).output().is_ok() {
+      match DistroFamily::from_str(&distro_family.to_string()) {
+        Some(DistroFamily::Debian) if *cmd == AptPackageManager::NAME => return Some(*manager),
+        Some(DistroFamily::RedHat) if *cmd == DnfPackageManager::NAME => return Some(*manager),
+        Some(DistroFamily::Arch) if *cmd == PacmanPackageManager::NAME => return Some(*manager),
+        Some(DistroFamily::SUSE) if *cmd == ZypperPackageManager::NAME => return Some(*manager),
+        Some(DistroFamily::NixOS) if *cmd == NixPackageManager::NAME => return Some(*manager),
+        _ => {}
+      }
+    }
+  }
+
+  // Fallback to the first detected package manager if no match with distro family
+  for (cmd, manager) in managers {
+    if SystemCommand::new("which").arg(cmd).output().is_ok() {
+      return Some(manager);
+    }
+  }
+
+  None
+}
+
+#[derive(Debug)]
+enum DistroFamily {
+  Debian,
+  RedHat,
+  Arch,
+  SUSE,
+  NixOS,
+  Unknown,
+}
+
+impl DistroFamily {
+  fn from_str(s: &str) -> Option<DistroFamily> {
+    match s {
+      "debian" => Some(DistroFamily::Debian),
+      "rhel" | "fedora" => Some(DistroFamily::RedHat),
+      "arch" => Some(DistroFamily::Arch),
+      "suse" => Some(DistroFamily::SUSE),
+      "nixos" => Some(DistroFamily::NixOS),
+      _ => None,
+    }
+  }
+}
+
+impl std::fmt::Display for DistroFamily {
+  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    write!(f, "{:?}", self)
+  }
+}
+
+fn get_distro_family() -> DistroFamily {
+  let os_release = fs::read_to_string("/etc/os-release").expect("Failed to read /etc/os-release");
+  for line in os_release.lines() {
+    if line.starts_with("ID_LIKE=") {
+      return DistroFamily::from_str(line.trim_start_matches("ID_LIKE=").replace("\"", "").as_str()).unwrap_or(DistroFamily::Unknown);
+    }
+  }
+  for line in os_release.lines() {
+    if line.starts_with("ID=") {
+      return DistroFamily::from_str(line.trim_start_matches("ID=").replace("\"", "").as_str()).unwrap_or(DistroFamily::Unknown);
+    }
+  }
+  eprintln!("Error: Failed to determine Linux distribution family");
+  process::exit(1);
+}
+
+fn get_package_manager() -> &'static dyn PackageManager {
+  detect_package_manager().unwrap_or_else(|| {
+    eprintln!("Error: No supported package manager found.");
+    process::exit(1);
+  })
+}
+
+struct DnfPackageManager;
+impl DnfPackageManager {
+  const NAME: &str = "dnf";
+}
+impl PackageManager for DnfPackageManager {
+  fn get_name(&self) -> &str {
+    DnfPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement DNF package installation logic
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement DNF package uninstallation logic
+  }
+}
+
+struct PacmanPackageManager;
+impl PacmanPackageManager {
+  const NAME: &str = "pacman";
+}
+impl PackageManager for PacmanPackageManager {
+  fn get_name(&self) -> &str {
+    PacmanPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement Pacman package installation logic
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement Pacman package uninstallation logic
+  }
+}
+
+struct ZypperPackageManager;
+impl ZypperPackageManager {
+  const NAME: &str = "zypper";
+}
+impl PackageManager for ZypperPackageManager {
+  fn get_name(&self) -> &str {
+    ZypperPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement Pacman package installation logic
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement Pacman package uninstallation logic
+  }
+}
+
+struct NixPackageManager;
+impl NixPackageManager {
+  const NAME: &str = "nix";
+}
+impl PackageManager for NixPackageManager {
+  fn get_name(&self) -> &str {
+    NixPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement Pacman package installation logic
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    // Implement Pacman package uninstallation logic
+  }
+}
+
+struct AptPackageManager;
+impl AptPackageManager {
+  const NAME: &str = "apt-get";
+}
+impl PackageManager for AptPackageManager {
+  fn get_name(&self) -> &str {
+    AptPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
     println!("apt_install_package({package})");
 
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
@@ -142,12 +330,12 @@ fn apt_install_package(package: &str, fs_type: &Filesystem) {
       println!("Package installed successfully");
       create_snapshot(fs_type, "root", &format!("{timestamp}-post-install"));
     } else {
-        eprintln!("Failed to install package");
-        rollback_to_snapshot(fs_type, "root", pre_install_snapshot_name);
+      eprintln!("Failed to install package");
+      rollback_to_snapshot(fs_type, "root", pre_install_snapshot_name);
     }
-}
+  }
 
-fn apt_uninstall_package(package: &str, fs_type: &Filesystem) {
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
     println!("apt_uninstall_package({package})");
 
     let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
@@ -174,9 +362,10 @@ fn apt_uninstall_package(package: &str, fs_type: &Filesystem) {
       println!("Package uninstalled successfully");
       create_snapshot(fs_type, "root", &format!("{timestamp}-post-uninstall"));
     } else {
-        eprintln!("Failed to uninstall package");
-        rollback_to_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
+      eprintln!("Failed to uninstall package");
+      rollback_to_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
     }
+  }
 }
 
 fn btrfs_create_snapshot(source: &str, dest: &str) {
