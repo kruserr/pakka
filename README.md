@@ -42,4 +42,4 @@ Visit the [Documentation](docs/README.md)
 - [ ] iced gui
 - [ ] scan installed packages for cves
 - [ ] option to limit strictly to open source software
-- [ ] 
+<!-- - [ ]  -->
