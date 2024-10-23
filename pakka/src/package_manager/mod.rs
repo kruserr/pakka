@@ -9,6 +9,7 @@ pub mod scoop_package_manager;
 pub mod zypper_package_manager;
 
 pub mod os_detection;
+pub mod package_manager_detection;
 
 pub trait PackageManager {
   fn get_name(&self) -> &str;

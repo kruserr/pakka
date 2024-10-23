@@ -2,16 +2,7 @@
 #![allow(unused_variables)]
 
 pub mod package_manager;
-use package_manager::apt_package_manager::AptPackageManager;
-use package_manager::brew_package_manager::BrewPackageManager;
-use package_manager::dnf_package_manager::DnfPackageManager;
-use package_manager::nix_package_manager::NixPackageManager;
-use package_manager::pacman_package_manager::PacmanPackageManager;
-use package_manager::scoop_package_manager::ScoopPackageManager;
-use package_manager::zypper_package_manager::ZypperPackageManager;
-use package_manager::PackageManager;
-
-use package_manager::os_detection::{get_distro_family, OperatingSystemFamily};
+use package_manager::package_manager_detection::get_package_manager;
 
 use chrono::Utc;
 use clap::{Arg, Command};
@@ -113,78 +104,6 @@ pub fn get_root_filesystem_type() -> Filesystem {
 
   eprintln!("Error: Failed to determine filesystem type");
   process::exit(1);
-}
-
-pub fn detect_package_manager() -> Option<&'static dyn PackageManager> {
-  let managers: Vec<(&str, &'static dyn PackageManager)> = vec![
-    (AptPackageManager::NAME, &AptPackageManager),
-    (DnfPackageManager::NAME, &DnfPackageManager),
-    (PacmanPackageManager::NAME, &PacmanPackageManager),
-    (ZypperPackageManager::NAME, &ZypperPackageManager),
-    (NixPackageManager::NAME, &NixPackageManager),
-    (BrewPackageManager::NAME, &BrewPackageManager),
-    (ScoopPackageManager::NAME, &ScoopPackageManager),
-  ];
-
-  let distro_family = get_distro_family();
-
-  for (cmd, manager) in &managers {
-    if SystemCommand::new("which").arg(cmd).output().is_ok() {
-      match OperatingSystemFamily::from_str(&distro_family.to_string()) {
-        Ok(OperatingSystemFamily::Debian)
-          if *cmd == AptPackageManager::NAME =>
-        {
-          return Some(*manager)
-        }
-        Ok(OperatingSystemFamily::RedHat)
-          if *cmd == DnfPackageManager::NAME =>
-        {
-          return Some(*manager)
-        }
-        Ok(OperatingSystemFamily::Arch)
-          if *cmd == PacmanPackageManager::NAME =>
-        {
-          return Some(*manager)
-        }
-        Ok(OperatingSystemFamily::Suse)
-          if *cmd == ZypperPackageManager::NAME =>
-        {
-          return Some(*manager)
-        }
-        Ok(OperatingSystemFamily::NixOS) if *cmd == NixPackageManager::NAME => {
-          return Some(*manager)
-        }
-        Ok(OperatingSystemFamily::MacOs)
-          if *cmd == BrewPackageManager::NAME =>
-        {
-          return Some(*manager)
-        }
-        Ok(OperatingSystemFamily::Windows)
-          if *cmd == ScoopPackageManager::NAME =>
-        {
-          return Some(*manager)
-        }
-        _ => {}
-      }
-    }
-  }
-
-  // Fallback to the first detected package manager if no match with distro
-  // family
-  for (cmd, manager) in managers {
-    if SystemCommand::new("which").arg(cmd).output().is_ok() {
-      return Some(manager);
-    }
-  }
-
-  None
-}
-
-pub fn get_package_manager() -> &'static dyn PackageManager {
-  detect_package_manager().unwrap_or_else(|| {
-    eprintln!("Error: No supported package manager found.");
-    process::exit(1);
-  })
 }
 
 pub fn btrfs_create_snapshot(source: &str, dest: &str) {
