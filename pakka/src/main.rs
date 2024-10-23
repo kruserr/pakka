@@ -1,6 +1,10 @@
 use pakka;
 
 fn main() {
+  // Enable heap protection
+  std::env::set_var("MALLOC_CHECK_", "3"); // Maximum heap consistency checking
+  std::env::set_var("MALLOC_PERTURB_", "123"); // Randomize heap allocations
+
   pakka::cli_main();
 }
 
