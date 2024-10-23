@@ -1,6 +1,16 @@
 #![allow(unreachable_code)]
 #![allow(unused_variables)]
 
+pub mod package_manager;
+use package_manager::apt_package_manager::AptPackageManager;
+use package_manager::brew_package_manager::BrewPackageManager;
+use package_manager::dnf_package_manager::DnfPackageManager;
+use package_manager::nix_package_manager::NixPackageManager;
+use package_manager::pacman_package_manager::PacmanPackageManager;
+use package_manager::scoop_package_manager::ScoopPackageManager;
+use package_manager::zypper_package_manager::ZypperPackageManager;
+use package_manager::PackageManager;
+
 use chrono::Utc;
 use clap::{Arg, Command};
 use std::fs;
@@ -100,24 +110,6 @@ pub fn get_root_filesystem_type() -> Filesystem {
 
   eprintln!("Error: Failed to determine filesystem type");
   process::exit(1);
-}
-
-pub trait PackageManager {
-  fn get_name(&self) -> &str;
-  fn install_package(&self, package: &str, fs_type: &Filesystem);
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem);
-}
-
-impl std::fmt::Debug for dyn PackageManager {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{}", self.get_name())
-  }
-}
-
-impl std::fmt::Display for dyn PackageManager {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{:?}", self)
-  }
 }
 
 pub fn detect_package_manager() -> Option<&'static dyn PackageManager> {
@@ -253,202 +245,6 @@ pub fn get_package_manager() -> &'static dyn PackageManager {
     eprintln!("Error: No supported package manager found.");
     process::exit(1);
   })
-}
-
-pub struct AptPackageManager;
-impl AptPackageManager {
-  const NAME: &str = "apt-get";
-}
-impl PackageManager for AptPackageManager {
-  fn get_name(&self) -> &str {
-    AptPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    println!("apt_install_package({package})");
-
-    let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
-    let pre_install_snapshot_name = &format!("{timestamp}-pre-install");
-
-    create_snapshot(fs_type, "root", pre_install_snapshot_name);
-
-    let update_output = SystemCommand::new("apt-get")
-      .arg("update")
-      .output()
-      .expect("Failed to update package list");
-
-    if !update_output.stdout.is_empty() {
-      print!("{}", String::from_utf8_lossy(&update_output.stdout));
-    }
-
-    if !update_output.status.success() {
-      eprint!("{}", String::from_utf8_lossy(&update_output.stderr));
-      return;
-    }
-
-    let output = SystemCommand::new("apt-get")
-      .arg("install")
-      .arg("-y")
-      .arg(package)
-      .output()
-      .expect("Failed to install package");
-
-    if !output.stdout.is_empty() {
-      print!("{}", String::from_utf8_lossy(&output.stdout));
-    }
-
-    if !output.stderr.is_empty() {
-      eprint!("{}", String::from_utf8_lossy(&output.stderr));
-    }
-
-    if output.status.success() {
-      println!("Package installed successfully");
-      create_snapshot(fs_type, "root", &format!("{timestamp}-post-install"));
-    } else {
-      eprintln!("Failed to install package");
-      rollback_to_snapshot(fs_type, "root", pre_install_snapshot_name);
-    }
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    println!("apt_uninstall_package({package})");
-
-    let timestamp = Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
-    let pre_uninstall_snapshot_name = &format!("{timestamp}-pre-uninstall");
-
-    create_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
-
-    let output = SystemCommand::new("apt-get")
-      .arg("remove")
-      .arg("-y")
-      .arg(package)
-      .output()
-      .expect("Failed to uninstall package");
-
-    if !output.stdout.is_empty() {
-      print!("{}", String::from_utf8_lossy(&output.stdout));
-    }
-
-    if !output.stderr.is_empty() {
-      eprint!("{}", String::from_utf8_lossy(&output.stderr));
-    }
-
-    if output.status.success() {
-      println!("Package uninstalled successfully");
-      create_snapshot(fs_type, "root", &format!("{timestamp}-post-uninstall"));
-    } else {
-      eprintln!("Failed to uninstall package");
-      rollback_to_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
-    }
-  }
-}
-
-pub struct DnfPackageManager;
-impl DnfPackageManager {
-  const NAME: &str = "dnf";
-}
-impl PackageManager for DnfPackageManager {
-  fn get_name(&self) -> &str {
-    DnfPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-}
-
-pub struct PacmanPackageManager;
-impl PacmanPackageManager {
-  const NAME: &str = "pacman";
-}
-impl PackageManager for PacmanPackageManager {
-  fn get_name(&self) -> &str {
-    PacmanPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-}
-
-pub struct ZypperPackageManager;
-impl ZypperPackageManager {
-  const NAME: &str = "zypper";
-}
-impl PackageManager for ZypperPackageManager {
-  fn get_name(&self) -> &str {
-    ZypperPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-}
-
-pub struct NixPackageManager;
-impl NixPackageManager {
-  const NAME: &str = "nix";
-}
-impl PackageManager for NixPackageManager {
-  fn get_name(&self) -> &str {
-    NixPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-}
-
-pub struct BrewPackageManager;
-impl BrewPackageManager {
-  const NAME: &str = "brew";
-}
-impl PackageManager for BrewPackageManager {
-  fn get_name(&self) -> &str {
-    BrewPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-}
-
-pub struct ScoopPackageManager;
-impl ScoopPackageManager {
-  const NAME: &str = "scoop";
-}
-impl PackageManager for ScoopPackageManager {
-  fn get_name(&self) -> &str {
-    ScoopPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    todo!()
-  }
 }
 
 pub fn btrfs_create_snapshot(source: &str, dest: &str) {
