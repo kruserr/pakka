@@ -18,8 +18,8 @@ impl std::fmt::Display for Filesystem {
 }
 
 pub fn get_root_filesystem_type() -> Filesystem {
-  let mounts =
-    std::fs::read_to_string("/proc/mounts").expect("Failed to read /proc/mounts");
+  let mounts = std::fs::read_to_string("/proc/mounts")
+    .expect("Failed to read /proc/mounts");
   for line in mounts.lines() {
     let fields: Vec<&str> = line.split_whitespace().collect();
     if fields.len() > 2 && fields[1] == "/" {

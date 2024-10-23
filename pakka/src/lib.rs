@@ -2,10 +2,13 @@
 #![allow(unused_variables)]
 
 pub mod file_system;
-use file_system::{Filesystem, get_root_filesystem_type, create_snapshot, rollback_last_transaction, rollback_to_snapshot};
+use file_system::{
+  create_snapshot, get_root_filesystem_type, rollback_last_transaction,
+  rollback_to_snapshot, Filesystem,
+};
 
 pub mod package_manager;
-use package_manager::package_manager_detection::{get_package_manager};
+use package_manager::package_manager_detection::get_package_manager;
 
 use chrono::Utc;
 use clap::{Arg, Command};
