@@ -11,11 +11,14 @@ use package_manager::scoop_package_manager::ScoopPackageManager;
 use package_manager::zypper_package_manager::ZypperPackageManager;
 use package_manager::PackageManager;
 
+use package_manager::os_detection::{get_distro_family, OperatingSystemFamily};
+
 use chrono::Utc;
 use clap::{Arg, Command};
 use std::fs;
 use std::process;
 use std::process::Command as SystemCommand;
+use std::str::FromStr;
 
 pub fn cli_main() {
   let install_id = "install";
@@ -128,37 +131,35 @@ pub fn detect_package_manager() -> Option<&'static dyn PackageManager> {
   for (cmd, manager) in &managers {
     if SystemCommand::new("which").arg(cmd).output().is_ok() {
       match OperatingSystemFamily::from_str(&distro_family.to_string()) {
-        Some(OperatingSystemFamily::Debian)
+        Ok(OperatingSystemFamily::Debian)
           if *cmd == AptPackageManager::NAME =>
         {
           return Some(*manager)
         }
-        Some(OperatingSystemFamily::RedHat)
+        Ok(OperatingSystemFamily::RedHat)
           if *cmd == DnfPackageManager::NAME =>
         {
           return Some(*manager)
         }
-        Some(OperatingSystemFamily::Arch)
+        Ok(OperatingSystemFamily::Arch)
           if *cmd == PacmanPackageManager::NAME =>
         {
           return Some(*manager)
         }
-        Some(OperatingSystemFamily::Suse)
+        Ok(OperatingSystemFamily::Suse)
           if *cmd == ZypperPackageManager::NAME =>
         {
           return Some(*manager)
         }
-        Some(OperatingSystemFamily::NixOS)
-          if *cmd == NixPackageManager::NAME =>
-        {
+        Ok(OperatingSystemFamily::NixOS) if *cmd == NixPackageManager::NAME => {
           return Some(*manager)
         }
-        Some(OperatingSystemFamily::MacOs)
+        Ok(OperatingSystemFamily::MacOs)
           if *cmd == BrewPackageManager::NAME =>
         {
           return Some(*manager)
         }
-        Some(OperatingSystemFamily::Windows)
+        Ok(OperatingSystemFamily::Windows)
           if *cmd == ScoopPackageManager::NAME =>
         {
           return Some(*manager)
@@ -177,67 +178,6 @@ pub fn detect_package_manager() -> Option<&'static dyn PackageManager> {
   }
 
   None
-}
-
-#[derive(Debug)]
-pub enum OperatingSystemFamily {
-  Debian,
-  RedHat,
-  Arch,
-  Suse,
-  NixOS,
-  MacOs,
-  Windows,
-  Unknown,
-}
-impl OperatingSystemFamily {
-  fn from_str(s: &str) -> Option<OperatingSystemFamily> {
-    match s {
-      "debian" => Some(OperatingSystemFamily::Debian),
-      "rhel" | "fedora" => Some(OperatingSystemFamily::RedHat),
-      "arch" => Some(OperatingSystemFamily::Arch),
-      "suse" => Some(OperatingSystemFamily::Suse),
-      "nixos" => Some(OperatingSystemFamily::NixOS),
-      "macos" => Some(OperatingSystemFamily::MacOs),
-      "windows" => Some(OperatingSystemFamily::Windows),
-      _ => None,
-    }
-  }
-}
-
-impl std::fmt::Display for OperatingSystemFamily {
-  fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-    write!(f, "{:?}", self)
-  }
-}
-
-pub fn get_distro_family() -> OperatingSystemFamily {
-  if cfg!(target_os = "macos") {
-    return OperatingSystemFamily::MacOs;
-  } else if cfg!(target_os = "windows") {
-    return OperatingSystemFamily::Windows;
-  }
-
-  let os_release = fs::read_to_string("/etc/os-release")
-    .expect("Failed to read /etc/os-release");
-  for line in os_release.lines() {
-    if line.starts_with("ID_LIKE=") {
-      return OperatingSystemFamily::from_str(
-        line.trim_start_matches("ID_LIKE=").replace("\"", "").as_str(),
-      )
-      .unwrap_or(OperatingSystemFamily::Unknown);
-    }
-  }
-  for line in os_release.lines() {
-    if line.starts_with("ID=") {
-      return OperatingSystemFamily::from_str(
-        line.trim_start_matches("ID=").replace("\"", "").as_str(),
-      )
-      .unwrap_or(OperatingSystemFamily::Unknown);
-    }
-  }
-  eprintln!("Error: Failed to determine Linux distribution family");
-  process::exit(1);
 }
 
 pub fn get_package_manager() -> &'static dyn PackageManager {

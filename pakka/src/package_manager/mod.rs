@@ -8,6 +8,8 @@ pub mod pacman_package_manager;
 pub mod scoop_package_manager;
 pub mod zypper_package_manager;
 
+pub mod os_detection;
+
 pub trait PackageManager {
   fn get_name(&self) -> &str;
   fn install_package(&self, package: &str, fs_type: &Filesystem);
