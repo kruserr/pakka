@@ -1,77 +1,74 @@
-use clap::{Arg, Command};
-use std::process::Command as SystemCommand;
 use chrono::Utc;
-use std::process;
+use clap::{Arg, Command};
 use std::fs;
+use std::process;
+use std::process::Command as SystemCommand;
 
 fn main() {
-    let install_id = "install";
-    let install_package_id = "package";
+  let install_id = "install";
+  let install_package_id = "package";
 
-    let uninstall_id = "uninstall";
-    let uninstall_package_id = "package";
+  let uninstall_id = "uninstall";
+  let uninstall_package_id = "package";
 
-    let rollback_id = "rollback";
+  let rollback_id = "rollback";
 
-    let matches = Command::new(env!("CARGO_PKG_NAME"))
-        .version(env!("CARGO_PKG_VERSION"))
-        .author(env!("CARGO_PKG_AUTHORS"))
-        .about(env!("CARGO_PKG_DESCRIPTION"))
-        .subcommand(
-          Command::new(install_id)
-            .about("Install a package")
-            .arg(
-              Arg::new(install_package_id)
-                .help("Package to install")
-                .required(true)
-                .index(1),
-            )
-        )
-        .subcommand(
-          Command::new(uninstall_id)
-            .about("uninstall a package")
-            .arg(
-              Arg::new(uninstall_package_id)
-                .help("Package to uninstall")
-                .required(true)
-                .index(1),
-            )
-        )
-        .subcommand(
-          Command::new(rollback_id)
-            .about("Rolls back the last transaction")
-        )
-        .get_matches();
+  let matches = Command::new(env!("CARGO_PKG_NAME"))
+    .version(env!("CARGO_PKG_VERSION"))
+    .author(env!("CARGO_PKG_AUTHORS"))
+    .about(env!("CARGO_PKG_DESCRIPTION"))
+    .subcommand(
+      Command::new(install_id).about("Install a package").arg(
+        Arg::new(install_package_id)
+          .help("Package to install")
+          .required(true)
+          .index(1),
+      ),
+    )
+    .subcommand(
+      Command::new(uninstall_id).about("uninstall a package").arg(
+        Arg::new(uninstall_package_id)
+          .help("Package to uninstall")
+          .required(true)
+          .index(1),
+      ),
+    )
+    .subcommand(
+      Command::new(rollback_id).about("Rolls back the last transaction"),
+    )
+    .get_matches();
 
-    let fs_type = &get_root_filesystem_type();
-    match fs_type {
-        Filesystem::Unsupported(_) => {
-          eprintln!("Error: Unsupported filesystem type '{fs_type}'. Only 'btrfs' and 'zfs' are supported.");
-          process::exit(1);
-        },
-        _ => {}
+  let fs_type = &get_root_filesystem_type();
+  match fs_type {
+    Filesystem::Unsupported(_) => {
+      eprintln!("Error: Unsupported filesystem type '{fs_type}'. Only 'btrfs' and 'zfs' are supported.");
+      process::exit(1);
     }
+    _ => {}
+  }
 
-    let package_manager = &get_package_manager();
+  let package_manager = &get_package_manager();
 
-    println!("{fs_type}");
-    println!("{package_manager}");
-    
-    if let Some(matches) = matches.subcommand_matches(install_id) {
-      let temp = String::new();
-      let package = matches.get_one::<String>(install_package_id).unwrap_or(&temp);
-      package_manager.install_package(package, fs_type);
-    }
+  println!("{fs_type}");
+  println!("{package_manager}");
 
-    if let Some(matches) = matches.subcommand_matches(uninstall_id) {
-      let temp = String::new();
-      let package = matches.get_one::<String>(uninstall_package_id).unwrap_or(&temp);
-      package_manager.uninstall_package(package, fs_type);
-    }
+  if let Some(matches) = matches.subcommand_matches(install_id) {
+    let temp = String::new();
+    let package =
+      matches.get_one::<String>(install_package_id).unwrap_or(&temp);
+    package_manager.install_package(package, fs_type);
+  }
 
-    if let Some(matches) = matches.subcommand_matches(rollback_id) {
-        rollback_last_transaction(fs_type);
-    }
+  if let Some(matches) = matches.subcommand_matches(uninstall_id) {
+    let temp = String::new();
+    let package =
+      matches.get_one::<String>(uninstall_package_id).unwrap_or(&temp);
+    package_manager.uninstall_package(package, fs_type);
+  }
+
+  if let Some(matches) = matches.subcommand_matches(rollback_id) {
+    rollback_last_transaction(fs_type);
+  }
 }
 
 #[derive(Debug)]
@@ -88,7 +85,8 @@ impl std::fmt::Display for Filesystem {
 }
 
 fn get_root_filesystem_type() -> Filesystem {
-  let mounts = fs::read_to_string("/proc/mounts").expect("Failed to read /proc/mounts");
+  let mounts =
+    fs::read_to_string("/proc/mounts").expect("Failed to read /proc/mounts");
   for line in mounts.lines() {
     let fields: Vec<&str> = line.split_whitespace().collect();
     if fields.len() > 2 && fields[1] == "/" {
@@ -136,17 +134,28 @@ fn detect_package_manager() -> Option<&'static dyn PackageManager> {
   for (cmd, manager) in &managers {
     if SystemCommand::new("which").arg(cmd).output().is_ok() {
       match DistroFamily::from_str(&distro_family.to_string()) {
-        Some(DistroFamily::Debian) if *cmd == AptPackageManager::NAME => return Some(*manager),
-        Some(DistroFamily::RedHat) if *cmd == DnfPackageManager::NAME => return Some(*manager),
-        Some(DistroFamily::Arch) if *cmd == PacmanPackageManager::NAME => return Some(*manager),
-        Some(DistroFamily::SUSE) if *cmd == ZypperPackageManager::NAME => return Some(*manager),
-        Some(DistroFamily::NixOS) if *cmd == NixPackageManager::NAME => return Some(*manager),
+        Some(DistroFamily::Debian) if *cmd == AptPackageManager::NAME => {
+          return Some(*manager)
+        }
+        Some(DistroFamily::RedHat) if *cmd == DnfPackageManager::NAME => {
+          return Some(*manager)
+        }
+        Some(DistroFamily::Arch) if *cmd == PacmanPackageManager::NAME => {
+          return Some(*manager)
+        }
+        Some(DistroFamily::SUSE) if *cmd == ZypperPackageManager::NAME => {
+          return Some(*manager)
+        }
+        Some(DistroFamily::NixOS) if *cmd == NixPackageManager::NAME => {
+          return Some(*manager)
+        }
         _ => {}
       }
     }
   }
 
-  // Fallback to the first detected package manager if no match with distro family
+  // Fallback to the first detected package manager if no match with distro
+  // family
   for (cmd, manager) in managers {
     if SystemCommand::new("which").arg(cmd).output().is_ok() {
       return Some(manager);
@@ -186,15 +195,22 @@ impl std::fmt::Display for DistroFamily {
 }
 
 fn get_distro_family() -> DistroFamily {
-  let os_release = fs::read_to_string("/etc/os-release").expect("Failed to read /etc/os-release");
+  let os_release = fs::read_to_string("/etc/os-release")
+    .expect("Failed to read /etc/os-release");
   for line in os_release.lines() {
     if line.starts_with("ID_LIKE=") {
-      return DistroFamily::from_str(line.trim_start_matches("ID_LIKE=").replace("\"", "").as_str()).unwrap_or(DistroFamily::Unknown);
+      return DistroFamily::from_str(
+        line.trim_start_matches("ID_LIKE=").replace("\"", "").as_str(),
+      )
+      .unwrap_or(DistroFamily::Unknown);
     }
   }
   for line in os_release.lines() {
     if line.starts_with("ID=") {
-      return DistroFamily::from_str(line.trim_start_matches("ID=").replace("\"", "").as_str()).unwrap_or(DistroFamily::Unknown);
+      return DistroFamily::from_str(
+        line.trim_start_matches("ID=").replace("\"", "").as_str(),
+      )
+      .unwrap_or(DistroFamily::Unknown);
     }
   }
   eprintln!("Error: Failed to determine Linux distribution family");
@@ -369,116 +385,116 @@ impl PackageManager for AptPackageManager {
 }
 
 fn btrfs_create_snapshot(source: &str, dest: &str) {
-    println!("btrfs_create_snapshot({source}, {dest})");
-    return;
+  println!("btrfs_create_snapshot({source}, {dest})");
+  return;
 
-    let output = SystemCommand::new("btrfs")
-        .arg("subvolume")
-        .arg("snapshot")
-        .arg(source)
-        .arg(dest)
-        .output()
-        .expect("Failed to create Btrfs snapshot");
+  let output = SystemCommand::new("btrfs")
+    .arg("subvolume")
+    .arg("snapshot")
+    .arg(source)
+    .arg(dest)
+    .output()
+    .expect("Failed to create Btrfs snapshot");
 
-    if output.status.success() {
-        println!("Btrfs snapshot created successfully");
-    } else {
-        eprintln!("Failed to create Btrfs snapshot");
-    }
+  if output.status.success() {
+    println!("Btrfs snapshot created successfully");
+  } else {
+    eprintln!("Failed to create Btrfs snapshot");
+  }
 }
 
 fn zfs_create_snapshot(pool: &str, dataset: &str, snapshot: &str) {
-    println!("zfs_create_snapshot({pool}, {dataset}, {snapshot})");
-    return;
+  println!("zfs_create_snapshot({pool}, {dataset}, {snapshot})");
+  return;
 
-    let snapshot_name = format!("{}@{}", dataset, snapshot);
-    let output = SystemCommand::new("zfs")
-        .arg("snapshot")
-        .arg(&snapshot_name)
-        .output()
-        .expect("Failed to create ZFS snapshot");
+  let snapshot_name = format!("{}@{}", dataset, snapshot);
+  let output = SystemCommand::new("zfs")
+    .arg("snapshot")
+    .arg(&snapshot_name)
+    .output()
+    .expect("Failed to create ZFS snapshot");
 
-    if output.status.success() {
-        println!("ZFS snapshot created successfully");
-    } else {
-        eprintln!("Failed to create ZFS snapshot");
-    }
+  if output.status.success() {
+    println!("ZFS snapshot created successfully");
+  } else {
+    eprintln!("Failed to create ZFS snapshot");
+  }
 }
 
 fn btrfs_rollback_snapshot(current: &str, snapshot: &str) {
-    println!("btrfs_rollback_snapshot({current}, {snapshot})");
-    return;
+  println!("btrfs_rollback_snapshot({current}, {snapshot})");
+  return;
 
-    let delete_output = SystemCommand::new("btrfs")
-        .arg("subvolume")
-        .arg("delete")
-        .arg(current)
-        .output()
-        .expect("Failed to delete current Btrfs subvolume");
+  let delete_output = SystemCommand::new("btrfs")
+    .arg("subvolume")
+    .arg("delete")
+    .arg(current)
+    .output()
+    .expect("Failed to delete current Btrfs subvolume");
 
-    if delete_output.status.success() {
-        let create_output = SystemCommand::new("btrfs")
-            .arg("subvolume")
-            .arg("snapshot")
-            .arg(snapshot)
-            .arg(current)
-            .output()
-            .expect("Failed to create Btrfs snapshot");
+  if delete_output.status.success() {
+    let create_output = SystemCommand::new("btrfs")
+      .arg("subvolume")
+      .arg("snapshot")
+      .arg(snapshot)
+      .arg(current)
+      .output()
+      .expect("Failed to create Btrfs snapshot");
 
-        if create_output.status.success() {
-            println!("Btrfs rollback successful");
-        } else {
-            eprintln!("Failed to create Btrfs snapshot for rollback");
-        }
+    if create_output.status.success() {
+      println!("Btrfs rollback successful");
     } else {
-        eprintln!("Failed to delete current Btrfs subvolume");
+      eprintln!("Failed to create Btrfs snapshot for rollback");
     }
+  } else {
+    eprintln!("Failed to delete current Btrfs subvolume");
+  }
 }
 
 fn zfs_rollback_snapshot(pool: &str, dataset: &str, snapshot: &str) {
-    println!("zfs_rollback_snapshot({pool}, {dataset}, {snapshot})");
-    return;
+  println!("zfs_rollback_snapshot({pool}, {dataset}, {snapshot})");
+  return;
 
-    let snapshot_name = format!("{}@{}", dataset, snapshot);
-    let output = SystemCommand::new("zfs")
-        .arg("rollback")
-        .arg(&snapshot_name)
-        .output()
-        .expect("Failed to rollback ZFS snapshot");
+  let snapshot_name = format!("{}@{}", dataset, snapshot);
+  let output = SystemCommand::new("zfs")
+    .arg("rollback")
+    .arg(&snapshot_name)
+    .output()
+    .expect("Failed to rollback ZFS snapshot");
 
-    if output.status.success() {
-        println!("ZFS rollback successful");
-    } else {
-        eprintln!("Failed to rollback ZFS snapshot");
-    }
+  if output.status.success() {
+    println!("ZFS rollback successful");
+  } else {
+    eprintln!("Failed to rollback ZFS snapshot");
+  }
 }
 
 fn create_snapshot(fs_type: &Filesystem, source: &str, dest: &str) {
-    println!("create_snapshot({fs_type}, {source}, {dest})");
-    return;
+  println!("create_snapshot({fs_type}, {source}, {dest})");
+  return;
 
-    match fs_type {
-        Filesystem::Btrfs => btrfs_create_snapshot(source, dest),
-        Filesystem::Zfs => zfs_create_snapshot(source, dest, "snapshot"),
-        _ => eprintln!("Unsupported filesystem type"),
-    }
+  match fs_type {
+    Filesystem::Btrfs => btrfs_create_snapshot(source, dest),
+    Filesystem::Zfs => zfs_create_snapshot(source, dest, "snapshot"),
+    _ => eprintln!("Unsupported filesystem type"),
+  }
 }
 
 fn rollback_to_snapshot(fs_type: &Filesystem, current: &str, snapshot: &str) {
-    println!("rollback_to_snapshot({fs_type}, {current}, {snapshot})");
-    return;
+  println!("rollback_to_snapshot({fs_type}, {current}, {snapshot})");
+  return;
 
-    match fs_type {
-        Filesystem::Btrfs => btrfs_rollback_snapshot(current, snapshot),
-        Filesystem::Zfs => zfs_rollback_snapshot(current, snapshot, "snapshot"),
-        _ => eprintln!("Unsupported filesystem type"),
-    }
+  match fs_type {
+    Filesystem::Btrfs => btrfs_rollback_snapshot(current, snapshot),
+    Filesystem::Zfs => zfs_rollback_snapshot(current, snapshot, "snapshot"),
+    _ => eprintln!("Unsupported filesystem type"),
+  }
 }
 
 fn rollback_last_transaction(fs_type: &Filesystem) {
-    println!("rollback_last_transaction()");
-    return;
+  println!("rollback_last_transaction()");
+  return;
 
-    // Implement rollback logic here
-    println!("Rolling back last transaction");
+  // Implement rollback logic here
+  println!("Rolling back last transaction");
 }

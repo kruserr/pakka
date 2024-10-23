@@ -1,9 +1,18 @@
-[package]
-name = "pakka"
-version = "0.1.0"
-edition = "2021"
-description = "A cross platform meta package manager with optional snapshotting file system based transactions"
+[workspace]
+resolver = "2"
 
-[dependencies]
-clap = "4"
-chrono = "0.4"
+members = [
+  "pakka",
+
+  # Internal
+  # "examples",
+]
+
+[workspace.lints.rust]
+unused_parens = "allow"
+unused_imports = "allow"
+
+[workspace.lints.clippy]
+needless_return = "allow"
+implicit_saturating_sub = "allow"
+single_component_path_imports = "allow"

@@ -1,0 +1,23 @@
+[package]
+name = "pakka"
+version = "0.0.0"
+edition = "2021"
+default-run = "pakka"
+license = "AGPL-3.0"
+authors = [
+  "Ragnar Kruse <46799551+kruserr@users.noreply.github.com>",
+]
+repository = "https://github.com/kruserr/pakka"
+homepage = "https://github.com/kruserr/pakka"
+documentation = "https://github.com/kruserr/pakka/docs"
+readme = "../README.md"
+description = "A cross platform meta package manager with auto snapshotting file system based transactions"
+keywords = ["cli", "terminal", "utility"]
+categories = ["command-line-utilities"]
+
+[lints]
+workspace = true
+
+[dependencies]
+clap = "4"
+chrono = "0.4"
