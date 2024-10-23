@@ -1,3 +1,6 @@
+#![allow(unreachable_code)]
+#![allow(unused_variables)]
+
 use chrono::Utc;
 use clap::{Arg, Command};
 use std::fs;
@@ -39,12 +42,9 @@ pub fn cli_main() {
     .get_matches();
 
   let fs_type = &get_root_filesystem_type();
-  match fs_type {
-    Filesystem::Unsupported(_) => {
-      eprintln!("Error: Unsupported filesystem type '{fs_type}'. Only 'btrfs' and 'zfs' are supported.");
-      process::exit(1);
-    }
-    _ => {}
+  if let Filesystem::Unsupported(_) = fs_type {
+    eprintln!("Error: Unsupported filesystem type '{fs_type}'. Only 'btrfs' and 'zfs' are supported.");
+    process::exit(1);
   }
 
   let package_manager = &get_package_manager();
