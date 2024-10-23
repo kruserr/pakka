@@ -127,6 +127,8 @@ fn detect_package_manager() -> Option<&'static dyn PackageManager> {
     (PacmanPackageManager::NAME, &PacmanPackageManager),
     (ZypperPackageManager::NAME, &ZypperPackageManager),
     (NixPackageManager::NAME, &NixPackageManager),
+    (BrewPackageManager::NAME, &BrewPackageManager),
+    (ScoopPackageManager::NAME, &ScoopPackageManager),
   ];
 
   let distro_family = get_distro_family();
@@ -147,6 +149,12 @@ fn detect_package_manager() -> Option<&'static dyn PackageManager> {
           return Some(*manager)
         }
         Some(DistroFamily::NixOS) if *cmd == NixPackageManager::NAME => {
+          return Some(*manager)
+        }
+        Some(DistroFamily::MacOs) if *cmd == BrewPackageManager::NAME => {
+          return Some(*manager)
+        }
+        Some(DistroFamily::Windows) if *cmd == ScoopPackageManager::NAME => {
           return Some(*manager)
         }
         _ => {}
@@ -172,6 +180,8 @@ enum DistroFamily {
   Arch,
   SUSE,
   NixOS,
+  MacOs,
+  Windows,
   Unknown,
 }
 
@@ -183,6 +193,8 @@ impl DistroFamily {
       "arch" => Some(DistroFamily::Arch),
       "suse" => Some(DistroFamily::SUSE),
       "nixos" => Some(DistroFamily::NixOS),
+      "macos" => Some(DistroFamily::MacOs),
+      "windows" => Some(DistroFamily::Windows),
       _ => None,
     }
   }
@@ -222,78 +234,6 @@ fn get_package_manager() -> &'static dyn PackageManager {
     eprintln!("Error: No supported package manager found.");
     process::exit(1);
   })
-}
-
-struct DnfPackageManager;
-impl DnfPackageManager {
-  const NAME: &str = "dnf";
-}
-impl PackageManager for DnfPackageManager {
-  fn get_name(&self) -> &str {
-    DnfPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement DNF package installation logic
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement DNF package uninstallation logic
-  }
-}
-
-struct PacmanPackageManager;
-impl PacmanPackageManager {
-  const NAME: &str = "pacman";
-}
-impl PackageManager for PacmanPackageManager {
-  fn get_name(&self) -> &str {
-    PacmanPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement Pacman package installation logic
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement Pacman package uninstallation logic
-  }
-}
-
-struct ZypperPackageManager;
-impl ZypperPackageManager {
-  const NAME: &str = "zypper";
-}
-impl PackageManager for ZypperPackageManager {
-  fn get_name(&self) -> &str {
-    ZypperPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement Pacman package installation logic
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement Pacman package uninstallation logic
-  }
-}
-
-struct NixPackageManager;
-impl NixPackageManager {
-  const NAME: &str = "nix";
-}
-impl PackageManager for NixPackageManager {
-  fn get_name(&self) -> &str {
-    NixPackageManager::NAME
-  }
-
-  fn install_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement Pacman package installation logic
-  }
-
-  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
-    // Implement Pacman package uninstallation logic
-  }
 }
 
 struct AptPackageManager;
@@ -381,6 +321,114 @@ impl PackageManager for AptPackageManager {
       eprintln!("Failed to uninstall package");
       rollback_to_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
     }
+  }
+}
+
+struct DnfPackageManager;
+impl DnfPackageManager {
+  const NAME: &str = "dnf";
+}
+impl PackageManager for DnfPackageManager {
+  fn get_name(&self) -> &str {
+    DnfPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+}
+
+struct PacmanPackageManager;
+impl PacmanPackageManager {
+  const NAME: &str = "pacman";
+}
+impl PackageManager for PacmanPackageManager {
+  fn get_name(&self) -> &str {
+    PacmanPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+}
+
+struct ZypperPackageManager;
+impl ZypperPackageManager {
+  const NAME: &str = "zypper";
+}
+impl PackageManager for ZypperPackageManager {
+  fn get_name(&self) -> &str {
+    ZypperPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+}
+
+struct NixPackageManager;
+impl NixPackageManager {
+  const NAME: &str = "nix";
+}
+impl PackageManager for NixPackageManager {
+  fn get_name(&self) -> &str {
+    NixPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+}
+
+struct BrewPackageManager;
+impl BrewPackageManager {
+  const NAME: &str = "brew";
+}
+impl PackageManager for BrewPackageManager {
+  fn get_name(&self) -> &str {
+    BrewPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+}
+
+struct ScoopPackageManager;
+impl ScoopPackageManager {
+  const NAME: &str = "scoop";
+}
+impl PackageManager for ScoopPackageManager {
+  fn get_name(&self) -> &str {
+    ScoopPackageManager::NAME
+  }
+
+  fn install_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
+  }
+
+  fn uninstall_package(&self, package: &str, fs_type: &Filesystem) {
+    todo!()
   }
 }
 
