@@ -70,6 +70,30 @@ rustflags = [
   "-C", "link-arg=-mllvm", "-C", "link-arg=-sub",  # Enable Instruction Substitution
 ]
 
+[x86_64-unknown-freebsd]
+linker = "clang"
+rustflags = [
+  "-C", "target-feature=+crt-static",
+  # "-C", "target-cpu=native",
+  "-C", "link-arg=-pie",                 # Enable Position Independent Executable
+  "-C", "link-arg=-Wl,-z,relro,-z,now",  # Enable RELRO and NOW
+  "-C", "link-arg=-Wl,-z,noexecstack",   # Disable executable stack
+  "-C", "link-arg=-Wl,-z,nodlopen",      # Disable dynamic loading
+  "-C", "link-arg=-Wl,-z,defs",          # Ensure all symbols are defined
+  "-C", "link-arg=-fstack-protector-strong", # Enable stack protection
+  "-C", "link-arg=-fcf-protection=full", # Enable Control Flow Protection
+
+  "-C", "link-arg=-D_FORTIFY_SOURCE=2",
+  "-C", "link-arg=-fvisibility=hidden",
+
+  "-C", "link-arg=-flto",       
+  "-C", "link-arg=-fsanitize=cfi",        # Enable Control Flow Integrity
+  # "-C", "link-arg=-fsanitize=safe-stack", # Use SafeStack for function stacks
+  "-C", "link-arg=-mllvm", "-C", "link-arg=-fla",  # Enable Flattening Obfuscation
+  "-C", "link-arg=-mllvm", "-C", "link-arg=-bcf",  # Enable Bogus Control Flow
+  "-C", "link-arg=-mllvm", "-C", "link-arg=-sub",  # Enable Instruction Substitution
+]
+
 [profile.dev]
 opt-level = 0
 debug = true
