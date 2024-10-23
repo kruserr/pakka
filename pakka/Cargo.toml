@@ -9,7 +9,7 @@ authors = [
 ]
 repository = "https://github.com/kruserr/pakka"
 homepage = "https://github.com/kruserr/pakka"
-documentation = "https://github.com/kruserr/pakka/docs"
+documentation = "https://github.com/kruserr/pakka/tree/master/docs/README.md"
 readme = "../README.md"
 description = "A cross platform meta package manager with auto snapshotting file system based transactions"
 keywords = ["cli", "terminal", "utility"]

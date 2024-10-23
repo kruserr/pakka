@@ -25,10 +25,10 @@ cargo install --locked pakka
 pakka --help
 ```
 
-For further install instructions read the [Getting started page](docs/pages/getting-started.md)
+For further install instructions read the [Getting started page](https://github.com/kruserr/pakka/tree/master/docs/pages/getting-started.md)
 
 ## Documentation
-Visit the [Documentation](docs/README.md)
+Visit the [Documentation](https://github.com/kruserr/pakka/tree/master/docs/README.md)
 
 ## Roadmap
 - [ ] if snapshotting filesystem is available it will automatically create a snapshot pre and post package management
