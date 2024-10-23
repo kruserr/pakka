@@ -135,26 +135,26 @@ fn detect_package_manager() -> Option<&'static dyn PackageManager> {
 
   for (cmd, manager) in &managers {
     if SystemCommand::new("which").arg(cmd).output().is_ok() {
-      match DistroFamily::from_str(&distro_family.to_string()) {
-        Some(DistroFamily::Debian) if *cmd == AptPackageManager::NAME => {
+      match OperatingSystemFamily::from_str(&distro_family.to_string()) {
+        Some(OperatingSystemFamily::Debian) if *cmd == AptPackageManager::NAME => {
           return Some(*manager)
         }
-        Some(DistroFamily::RedHat) if *cmd == DnfPackageManager::NAME => {
+        Some(OperatingSystemFamily::RedHat) if *cmd == DnfPackageManager::NAME => {
           return Some(*manager)
         }
-        Some(DistroFamily::Arch) if *cmd == PacmanPackageManager::NAME => {
+        Some(OperatingSystemFamily::Arch) if *cmd == PacmanPackageManager::NAME => {
           return Some(*manager)
         }
-        Some(DistroFamily::SUSE) if *cmd == ZypperPackageManager::NAME => {
+        Some(OperatingSystemFamily::SUSE) if *cmd == ZypperPackageManager::NAME => {
           return Some(*manager)
         }
-        Some(DistroFamily::NixOS) if *cmd == NixPackageManager::NAME => {
+        Some(OperatingSystemFamily::NixOS) if *cmd == NixPackageManager::NAME => {
           return Some(*manager)
         }
-        Some(DistroFamily::MacOs) if *cmd == BrewPackageManager::NAME => {
+        Some(OperatingSystemFamily::MacOs) if *cmd == BrewPackageManager::NAME => {
           return Some(*manager)
         }
-        Some(DistroFamily::Windows) if *cmd == ScoopPackageManager::NAME => {
+        Some(OperatingSystemFamily::Windows) if *cmd == ScoopPackageManager::NAME => {
           return Some(*manager)
         }
         _ => {}
@@ -174,7 +174,7 @@ fn detect_package_manager() -> Option<&'static dyn PackageManager> {
 }
 
 #[derive(Debug)]
-enum DistroFamily {
+enum OperatingSystemFamily {
   Debian,
   RedHat,
   Arch,
@@ -185,44 +185,50 @@ enum DistroFamily {
   Unknown,
 }
 
-impl DistroFamily {
-  fn from_str(s: &str) -> Option<DistroFamily> {
+impl OperatingSystemFamily {
+  fn from_str(s: &str) -> Option<OperatingSystemFamily> {
     match s {
-      "debian" => Some(DistroFamily::Debian),
-      "rhel" | "fedora" => Some(DistroFamily::RedHat),
-      "arch" => Some(DistroFamily::Arch),
-      "suse" => Some(DistroFamily::SUSE),
-      "nixos" => Some(DistroFamily::NixOS),
-      "macos" => Some(DistroFamily::MacOs),
-      "windows" => Some(DistroFamily::Windows),
+      "debian" => Some(OperatingSystemFamily::Debian),
+      "rhel" | "fedora" => Some(OperatingSystemFamily::RedHat),
+      "arch" => Some(OperatingSystemFamily::Arch),
+      "suse" => Some(OperatingSystemFamily::SUSE),
+      "nixos" => Some(OperatingSystemFamily::NixOS),
+      "macos" => Some(OperatingSystemFamily::MacOs),
+      "windows" => Some(OperatingSystemFamily::Windows),
       _ => None,
     }
   }
 }
 
-impl std::fmt::Display for DistroFamily {
+impl std::fmt::Display for OperatingSystemFamily {
   fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
     write!(f, "{:?}", self)
   }
 }
 
-fn get_distro_family() -> DistroFamily {
+fn get_distro_family() -> OperatingSystemFamily {
+  if cfg!(target_os = "macos") {
+    return OperatingSystemFamily::MacOs;
+  } else if cfg!(target_os = "windows") {
+    return OperatingSystemFamily::Windows;
+  }
+
   let os_release = fs::read_to_string("/etc/os-release")
     .expect("Failed to read /etc/os-release");
   for line in os_release.lines() {
     if line.starts_with("ID_LIKE=") {
-      return DistroFamily::from_str(
+      return OperatingSystemFamily::from_str(
         line.trim_start_matches("ID_LIKE=").replace("\"", "").as_str(),
       )
-      .unwrap_or(DistroFamily::Unknown);
+      .unwrap_or(OperatingSystemFamily::Unknown);
     }
   }
   for line in os_release.lines() {
     if line.starts_with("ID=") {
-      return DistroFamily::from_str(
+      return OperatingSystemFamily::from_str(
         line.trim_start_matches("ID=").replace("\"", "").as_str(),
       )
-      .unwrap_or(DistroFamily::Unknown);
+      .unwrap_or(OperatingSystemFamily::Unknown);
     }
   }
   eprintln!("Error: Failed to determine Linux distribution family");
