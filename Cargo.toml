@@ -1,8 +1,8 @@
 [package]
-name = "cli-packmgr"
+name = "pakka"
 version = "0.1.0"
 edition = "2021"
-description = "Transactional Immutable Package Manager Wrapper for linux package managers"
+description = "A cross platform meta package manager with optional snapshotting file system based transactions"
 
 [dependencies]
 clap = "4"
