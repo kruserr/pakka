@@ -31,13 +31,14 @@ For further install instructions read the [Getting started page](https://github.
 Visit the [Documentation](https://github.com/kruserr/pakka/tree/master/docs/README.md)
 
 ## Roadmap
-- [ ] if snapshotting filesystem is available it will automatically create a snapshot pre and post package management
+- [x] log structured event sourcing database to track installed packages over time
+- [x] export and import database to install the same packages on another machine
+- [ ] update repos
 - [ ] upgrade packages
 - [ ] search packages
 - [ ] list installed packages
 - [ ] fully cross platform
-- [ ] log structured event sourcing database to track installed packages over time
-- [ ] export and import database to install the same packages on another machine
+- [ ] if snapshotting filesystem is available it will automatically create a snapshot pre and post package management
 - [ ] package name mapper
 - [ ] iced gui
 - [ ] scan installed packages for cves
