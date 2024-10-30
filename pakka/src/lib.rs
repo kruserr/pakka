@@ -15,7 +15,7 @@ use database::event_sourcing_database;
 use event_sourcing_database::{EventSourcingDatabase, Event, EventType};
 
 use clap::{Arg, Command};
-use std::process;
+use std::{fs::File, io::{BufRead, BufReader}, process};
 
 pub fn cli_main() {
     let install_id = "install";
@@ -33,6 +33,9 @@ pub fn cli_main() {
     let diff_id = "diff";
     let from_date_arg = "from";
     let to_date_arg = "to";
+
+    let import_id = "import";
+    let import_file_arg = "file";
 
     let matches = Command::new(env!("CARGO_PKG_NAME"))
         .version(env!("CARGO_PKG_VERSION"))
@@ -61,6 +64,16 @@ pub fn cli_main() {
         .subcommand(Command::new(rollback_id).about("Roll back the last transaction"))
         .subcommand(Command::new(list_id).about("List all installed packages"))
         .subcommand(Command::new(export_id).about("Export installed packages"))
+        .subcommand(
+            Command::new(import_id)
+                .about("Import packages from a file")
+                .arg(
+                    Arg::new(import_file_arg)
+                        .help("File to import packages from")
+                        .required(true)
+                        .index(1),
+                ),
+        )
         .subcommand(
             Command::new(history_id)
                 .about("Show history of installed and uninstalled packages")
@@ -135,6 +148,14 @@ pub fn cli_main() {
             Ok(_) => println!("Exported installed packages to {}", export_file),
             Err(e) => eprintln!("Error exporting packages: {}", e),
         }
+    }else if let Some(matches) = matches.subcommand_matches(import_id) {
+      let import_file = matches
+          .get_one::<String>(import_file_arg)
+          .expect("Import file is required");
+      match import_packages(import_file, fs_type) {
+          Ok(_) => println!("Import successful."),
+          Err(e) => eprintln!("Error importing packages: {}", e),
+      }
     } else if let Some(matches) = matches.subcommand_matches(history_id) {
         let date_filter = matches.get_one::<String>("date").cloned();
         db.show_history(date_filter);
@@ -150,4 +171,25 @@ pub fn cli_main() {
         eprintln!("No valid subcommand was provided.");
         process::exit(1);
     }
+}
+
+fn import_packages(import_file: &str, fs_type: &Filesystem) -> Result<(), Box<dyn std::error::Error>> {
+    let file = File::open(import_file)?;
+    let reader = BufReader::new(file);
+
+    for line in reader.lines() {
+        let line = line?;
+        let parts: Vec<&str> = line.trim().split('\t').collect();
+        if parts.len() != 2 {
+            eprintln!("Invalid line format: {}", line);
+            continue;
+        }
+        let package = parts[0];
+        let package_manager_name = parts[1];
+
+        let package_manager = &get_package_manager();
+        package_manager.install_package(package, fs_type);
+    }
+
+    Ok(())
 }

@@ -1,8 +1,8 @@
 use serde::{Serialize, Deserialize};
 use chrono::Utc;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use std::fs::{File, OpenOptions};
-use std::io::{self, BufReader, BufRead, Write};
+use std::io::{self, BufRead, BufReader, BufWriter, Write};
 use std::sync::{Mutex, Arc};
 use once_cell::sync::OnceCell;
 
@@ -81,12 +81,36 @@ impl EventSourcingDatabase {
         Ok(packages)
     }
 
-    pub fn export_installed_packages(&self, export_file: &str) -> io::Result<()> {
-        let packages = self.get_installed_packages()?;
-        let mut file = File::create(export_file)?;
-        for pkg in packages {
-            writeln!(file, "{}", pkg)?;
+    pub fn export_installed_packages(&self, export_file: &str) -> Result<(), std::io::Error> {
+        let log_file = "event_log.jsonl";
+        let file = File::open(log_file)?;
+        let reader = BufReader::new(file);
+
+        let mut installed_packages: HashMap<String, String> = HashMap::new();
+
+        for line in reader.lines() {
+            let line = line?;
+            let event: Event = serde_json::from_str(&line)?;
+            match event.event_type {
+                EventType::Install => {
+                    installed_packages.insert(event.package_name.clone(), event.package_manager.clone());
+                }
+                EventType::Uninstall => {
+                    installed_packages.remove(&event.package_name);
+                }
+            }
         }
+
+        let export_file_path = export_file;
+        let export_file = File::create(export_file_path)?;
+        let mut writer = BufWriter::new(export_file);
+
+        for (package_name, package_manager) in installed_packages.iter() {
+            writeln!(writer, "{}\t{}", package_name, package_manager)?;
+        }
+
+        println!("Exported installed packages to {:?}", export_file_path);
+
         Ok(())
     }
 

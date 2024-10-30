@@ -7,9 +7,9 @@
 - [ ] if installing on ***dows run scoop install bootstrap
 
 # v0.2
-- [ ] record all package install and uninstall in log structured database with event sourcing, we can then say exactly which packages were installed at a given point in time
+- [x] record all package install and uninstall in log structured database with event sourcing, we can then say exactly which packages were installed at a given point in time
 - [ ] sync to database, e.g. calc diff between which packages should be on the system and install teh ones that are missing, we will wait with removing packages since that can be a lot harder, only allow removing packages manually not automatically sync tr db
-- [ ] export and import single file sync db
+- [x] export and import single file sync db
 
 - [ ] iced gui
 - [ ] we don't want 100% reproducibility we just want to be able to install same packages as on another machine and we want a simple, clean and cross platform solution that a regular ***dows user can use with a gui but also a cli for me :)
