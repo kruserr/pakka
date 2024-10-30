@@ -1,4 +1,4 @@
-use crate::{create_snapshot, rollback_to_snapshot, Filesystem};
+use crate::{create_snapshot, database::event_sourcing_database::{Event, EventSourcingDatabase, EventType}, rollback_to_snapshot, Filesystem};
 
 use super::PackageManager;
 
@@ -51,6 +51,10 @@ impl PackageManager for AptPackageManager {
     if output.status.success() {
       println!("Package installed successfully");
       create_snapshot(fs_type, "root", &format!("{timestamp}-post-install"));
+
+      let event = Event::new(EventType::Install, package, self.get_name());
+      let db = EventSourcingDatabase::instance();
+      db.log_event(&event);
     } else {
       eprintln!("Failed to install package");
       rollback_to_snapshot(fs_type, "root", pre_install_snapshot_name);
@@ -83,6 +87,10 @@ impl PackageManager for AptPackageManager {
     if output.status.success() {
       println!("Package uninstalled successfully");
       create_snapshot(fs_type, "root", &format!("{timestamp}-post-uninstall"));
+
+      let event = Event::new(EventType::Uninstall, package, self.get_name());
+      let db = EventSourcingDatabase::instance();
+      db.log_event(&event);
     } else {
       eprintln!("Failed to uninstall package");
       rollback_to_snapshot(fs_type, "root", pre_uninstall_snapshot_name);
