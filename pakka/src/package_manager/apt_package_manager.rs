@@ -1,4 +1,10 @@
-use crate::{create_snapshot, database::event_sourcing_database::{Event, EventSourcingDatabase, EventType}, rollback_to_snapshot, Filesystem};
+use crate::{
+  create_snapshot,
+  database::event_sourcing_database::{
+    Event, EventSourcingDatabase, EventType,
+  },
+  rollback_to_snapshot, Filesystem,
+};
 
 use super::PackageManager;
 
