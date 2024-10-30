@@ -1,3 +1,6 @@
+use apt_package_manager::AptPackageManager;
+use scoop_package_manager::ScoopPackageManager;
+
 use crate::Filesystem;
 
 pub mod apt_package_manager;
