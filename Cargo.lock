@@ -2404,7 +2404,7 @@ dependencies = [
 
 [[package]]
 name = "pakka"
-version = "0.0.3"
+version = "0.0.4"
 dependencies = [
  "assert_cmd",
  "chrono",
@@ -2417,7 +2417,7 @@ dependencies = [
 
 [[package]]
 name = "pakka-gui"
-version = "0.1.0"
+version = "0.0.4"
 dependencies = [
  "iced",
  "pakka",
