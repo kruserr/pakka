@@ -101,11 +101,7 @@ pub fn cli_main() {
 
   let fs_type = &get_root_filesystem_type();
   if let Filesystem::Unsupported(_) = fs_type {
-    eprintln!(
-            "Error: Unsupported filesystem type '{}'. Only 'btrfs' and 'zfs' are supported.",
-            fs_type
-        );
-    process::exit(1);
+    println!("W: Snapshotting disabled, '{fs_type}' filesystem type");
   }
 
   let package_manager = &get_package_manager();

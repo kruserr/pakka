@@ -18,8 +18,15 @@ impl std::fmt::Display for Filesystem {
 }
 
 pub fn get_root_filesystem_type() -> Filesystem {
+  if cfg!(target_os = "macos") {
+    return Filesystem::Unsupported("macos".to_string());
+  } else if cfg!(target_os = "windows") {
+    return Filesystem::Unsupported("windows".to_string());
+  }
+
   let mounts = std::fs::read_to_string("/proc/mounts")
     .expect("Failed to read /proc/mounts");
+
   for line in mounts.lines() {
     let fields: Vec<&str> = line.split_whitespace().collect();
     if fields.len() > 2 && fields[1] == "/" {
@@ -31,11 +38,14 @@ pub fn get_root_filesystem_type() -> Filesystem {
     }
   }
 
-  eprintln!("Error: Failed to determine filesystem type");
-  std::process::exit(1);
+  return Filesystem::Unsupported("unknown".to_string());
 }
 
 pub fn create_snapshot(fs_type: &Filesystem, source: &str, dest: &str) {
+  if let Filesystem::Unsupported(_) = fs_type {
+    return;
+  }
+
   println!("create_snapshot({fs_type}, {source}, {dest})");
   return;
 
@@ -51,6 +61,10 @@ pub fn rollback_to_snapshot(
   current: &str,
   snapshot: &str,
 ) {
+  if let Filesystem::Unsupported(_) = fs_type {
+    return;
+  }
+
   println!("rollback_to_snapshot({fs_type}, {current}, {snapshot})");
   return;
 
@@ -62,6 +76,10 @@ pub fn rollback_to_snapshot(
 }
 
 pub fn rollback_last_transaction(fs_type: &Filesystem) {
+  if let Filesystem::Unsupported(_) = fs_type {
+    return;
+  }
+
   println!("rollback_last_transaction()");
   return;
 
