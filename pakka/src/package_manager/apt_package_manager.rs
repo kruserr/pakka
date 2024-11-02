@@ -22,7 +22,6 @@ impl PackageManager for AptPackageManager {
 
     let timestamp = chrono::Utc::now().format("%Y-%m-%dT%H:%M:%S").to_string();
     let pre_install_snapshot_name = &format!("{timestamp}-pre-install");
-
     create_snapshot(fs_type, "root", pre_install_snapshot_name);
 
     let update_output = std::process::Command::new("apt-get")
