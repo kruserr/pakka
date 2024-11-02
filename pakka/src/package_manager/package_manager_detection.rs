@@ -40,38 +40,25 @@ pub fn detect_package_manager() -> Option<&'static dyn PackageManager> {
   for (cmd, manager) in &managers {
     if which(cmd).is_some() {
       match distro_family {
-        OperatingSystemFamily::Debian
-          if *cmd == AptPackageManager::NAME =>
-        {
+        OperatingSystemFamily::Debian if *cmd == AptPackageManager::NAME => {
           return Some(*manager)
         }
-        OperatingSystemFamily::RedHat
-          if *cmd == DnfPackageManager::NAME =>
-        {
+        OperatingSystemFamily::RedHat if *cmd == DnfPackageManager::NAME => {
           return Some(*manager)
         }
-        OperatingSystemFamily::Arch
-          if *cmd == PacmanPackageManager::NAME =>
-        {
+        OperatingSystemFamily::Arch if *cmd == PacmanPackageManager::NAME => {
           return Some(*manager)
         }
-        OperatingSystemFamily::Suse
-          if *cmd == ZypperPackageManager::NAME =>
-        {
+        OperatingSystemFamily::Suse if *cmd == ZypperPackageManager::NAME => {
           return Some(*manager)
         }
-        OperatingSystemFamily::NixOS if *cmd == NixPackageManager::NAME => 
-        {
+        OperatingSystemFamily::NixOS if *cmd == NixPackageManager::NAME => {
           return Some(*manager)
         }
-        OperatingSystemFamily::MacOs
-          if *cmd == BrewPackageManager::NAME =>
-        {
+        OperatingSystemFamily::MacOs if *cmd == BrewPackageManager::NAME => {
           return Some(*manager)
         }
-        OperatingSystemFamily::Windows
-          if *cmd == ScoopPackageManager::NAME =>
-        {
+        OperatingSystemFamily::Windows if *cmd == ScoopPackageManager::NAME => {
           return Some(*manager)
         }
         _ => {}
