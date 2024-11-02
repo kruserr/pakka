@@ -37,53 +37,51 @@ pub fn detect_package_manager() -> Option<&'static dyn PackageManager> {
 
   let distro_family = get_distro_family();
 
-  // for (cmd, manager) in &managers {
-  //   if which(cmd).is_some() {
-  //     // TODO fix this, it just returns Err()
-  //     match OperatingSystemFamily::from_str(&distro_family.to_string()) {
-  //       Ok(OperatingSystemFamily::Debian)
-  //         if *cmd == AptPackageManager::NAME =>
-  //       {
-  //         return Some(*manager)
-  //       }
-  //       Ok(OperatingSystemFamily::RedHat)
-  //         if *cmd == DnfPackageManager::NAME =>
-  //       {
-  //         return Some(*manager)
-  //       }
-  //       Ok(OperatingSystemFamily::Arch)
-  //         if *cmd == PacmanPackageManager::NAME =>
-  //       {
-  //         return Some(*manager)
-  //       }
-  //       Ok(OperatingSystemFamily::Suse)
-  //         if *cmd == ZypperPackageManager::NAME =>
-  //       {
-  //         return Some(*manager)
-  //       }
-  //       Ok(OperatingSystemFamily::NixOS) if *cmd == NixPackageManager::NAME
-  // => {         return Some(*manager)
-  //       }
-  //       Ok(OperatingSystemFamily::MacOs)
-  //         if *cmd == BrewPackageManager::NAME =>
-  //       {
-  //         return Some(*manager)
-  //       }
-  //       Ok(OperatingSystemFamily::Windows)
-  //         if *cmd == ScoopPackageManager::NAME =>
-  //       {
-  //         return Some(*manager)
-  //       }
-  //       _ => {}
-  //     }
-  //   }
-  // }
+  for (cmd, manager) in &managers {
+    if which(cmd).is_some() {
+      match distro_family {
+        OperatingSystemFamily::Debian
+          if *cmd == AptPackageManager::NAME =>
+        {
+          return Some(*manager)
+        }
+        OperatingSystemFamily::RedHat
+          if *cmd == DnfPackageManager::NAME =>
+        {
+          return Some(*manager)
+        }
+        OperatingSystemFamily::Arch
+          if *cmd == PacmanPackageManager::NAME =>
+        {
+          return Some(*manager)
+        }
+        OperatingSystemFamily::Suse
+          if *cmd == ZypperPackageManager::NAME =>
+        {
+          return Some(*manager)
+        }
+        OperatingSystemFamily::NixOS if *cmd == NixPackageManager::NAME => 
+        {
+          return Some(*manager)
+        }
+        OperatingSystemFamily::MacOs
+          if *cmd == BrewPackageManager::NAME =>
+        {
+          return Some(*manager)
+        }
+        OperatingSystemFamily::Windows
+          if *cmd == ScoopPackageManager::NAME =>
+        {
+          return Some(*manager)
+        }
+        _ => {}
+      }
+    }
+  }
 
   // Fallback to the first detected package manager if no match with distro
   // family
   for (cmd, manager) in managers {
-    println!("{:?}", which(cmd));
-
     if which(cmd).is_some() {
       return Some(manager);
     }
