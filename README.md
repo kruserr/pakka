@@ -12,7 +12,7 @@ The goal of this project is to improve the package manager user experience, and 
 
 We are building a layer of abstraction above the system package manager, and making it such that you only need to learn a single package manager to use them all, although with a reduced feature set where applicable, such as with nix.
 
-This project is especially targeted towards those who are stuck on a ***dows based fleet, but need a streamlined package manager with streamlined critical cve update notifications for installed software with opt out invasive notifications that force the end user to update.
+This project is especially targeted towards those who are stuck on a windows based fleet, but need a streamlined package manager with streamlined critical cve update notifications for installed software with opt out invasive notifications that force the end user to update.
 
 ## Features
 - CLI client
@@ -43,4 +43,5 @@ Visit the [Documentation](https://github.com/kruserr/pakka/tree/master/docs/READ
 - [ ] iced gui
 - [ ] scan installed packages for cves
 - [ ] option to limit strictly to open source software
+- [ ] option to limit to white listed packages
 <!-- - [ ]  -->
